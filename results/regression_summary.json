@@ -1,0 +1,46 @@
+{
+  "passed": 832,
+  "failed": 0,
+  "configurations": [
+    {
+      "configuration": "baseline",
+      "passed": 134,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo16",
+      "passed": 134,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo32",
+      "passed": 134,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo16_cache",
+      "passed": 134,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo32_cache",
+      "passed": 134,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo16_slow",
+      "passed": 54,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo32_slow",
+      "passed": 54,
+      "failed": 0
+    },
+    {
+      "configuration": "ooo16_legacy",
+      "passed": 54,
+      "failed": 0
+    }
+  ]
+}

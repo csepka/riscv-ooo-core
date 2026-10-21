@@ -1,0 +1,180 @@
+{
+  "tool": "Yosys 0.57 (git sha1 3aca86049e79a165932e3e7660358376f45acaed, clang++ 17.0.0 -fPIC -O3)",
+  "rtl_sha256": "f1fa231c31633c161649fc2ab9c4dac4b16821ae8f8b51a313c4d49a47176fe4",
+  "technology": "Yosys generic gates; no physical library",
+  "area": null,
+  "timing": null,
+  "configurations": [
+    {
+      "configuration": "baseline",
+      "top": "rv32_baseline",
+      "parameters": {},
+      "generic_cells": 10432,
+      "flip_flop_bits": 1845,
+      "cells_by_type": {
+        "$_ANDNOT_": 1857,
+        "$_AND_": 223,
+        "$_MUX_": 3454,
+        "$_NAND_": 209,
+        "$_NOR_": 453,
+        "$_NOT_": 520,
+        "$_ORNOT_": 353,
+        "$_OR_": 680,
+        "$_SDFFCE_PN0P_": 992,
+        "$_SDFFE_PP0P_": 806,
+        "$_SDFF_PN0_": 32,
+        "$_SDFF_PP0_": 15,
+        "$_XNOR_": 227,
+        "$_XOR_": 606,
+        "$scopeinfo": 5
+      },
+      "unmapped_memories": 0,
+      "warnings": [
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117"
+      ],
+      "script": [
+        "read_verilog -sv rtl/rv32_baseline.sv rtl/rv32_cache.sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_fetch.sv rtl/rv32_load_value.sv rtl/rv32_muldiv.sv rtl/rv32_ooo.sv",
+        "hierarchy -check -top rv32_baseline",
+        "rename -top synthesized_core",
+        "synth -flatten -top synthesized_core",
+        "check -assert",
+        "select -assert-none t:$_DLATCH_*",
+        "tee -o /Users/christophersepka/Desktop/RISC-V_proj/riscv-ooo-core/build/stat_baseline.json stat -json",
+        "write_json build/netlist_baseline.json"
+      ],
+      "log_sha256": "38835c701b2e84f688b3830b4e896c79dfdacf169757f49aa9360a709aeafe48"
+    },
+    {
+      "configuration": "ooo16",
+      "top": "rv32_ooo",
+      "parameters": {
+        "ROB_DEPTH": 16
+      },
+      "generic_cells": 41029,
+      "flip_flop_bits": 6452,
+      "cells_by_type": {
+        "$_ANDNOT_": 5854,
+        "$_AND_": 389,
+        "$_DFFE_PP_": 1582,
+        "$_DFF_P_": 82,
+        "$_MUX_": 17970,
+        "$_NAND_": 259,
+        "$_NOR_": 520,
+        "$_NOT_": 5206,
+        "$_ORNOT_": 523,
+        "$_OR_": 2450,
+        "$_SDFFCE_PN0P_": 2304,
+        "$_SDFFE_PP0P_": 2418,
+        "$_SDFF_PN0_": 32,
+        "$_SDFF_PP0_": 34,
+        "$_XNOR_": 379,
+        "$_XOR_": 1021,
+        "$scopeinfo": 6
+      },
+      "unmapped_memories": 0,
+      "warnings": [
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117",
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117",
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117"
+      ],
+      "script": [
+        "read_verilog -sv rtl/rv32_baseline.sv rtl/rv32_cache.sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_fetch.sv rtl/rv32_load_value.sv rtl/rv32_muldiv.sv rtl/rv32_ooo.sv",
+        "chparam -set ROB_DEPTH 16 rv32_ooo",
+        "hierarchy -check -top rv32_ooo",
+        "rename -top synthesized_core",
+        "synth -flatten -top synthesized_core",
+        "check -assert",
+        "select -assert-none t:$_DLATCH_*",
+        "tee -o /Users/christophersepka/Desktop/RISC-V_proj/riscv-ooo-core/build/stat_ooo16.json stat -json",
+        "write_json build/netlist_ooo16.json"
+      ],
+      "log_sha256": "ad676bc4f7aea5a86dfb788610215348fa39f386807b6d43462f4f67d51afec4"
+    },
+    {
+      "configuration": "ooo32",
+      "top": "rv32_ooo",
+      "parameters": {
+        "ROB_DEPTH": 32
+      },
+      "generic_cells": 70966,
+      "flip_flop_bits": 11113,
+      "cells_by_type": {
+        "$_ANDNOT_": 9594,
+        "$_AND_": 472,
+        "$_DFFE_PP_": 3166,
+        "$_DFF_P_": 130,
+        "$_MUX_": 33466,
+        "$_NAND_": 292,
+        "$_NOR_": 548,
+        "$_NOT_": 8642,
+        "$_ORNOT_": 625,
+        "$_OR_": 4194,
+        "$_SDFFCE_PN0P_": 3584,
+        "$_SDFFE_PP0P_": 4150,
+        "$_SDFF_PN0_": 32,
+        "$_SDFF_PP0_": 51,
+        "$_XNOR_": 573,
+        "$_XOR_": 1441,
+        "$scopeinfo": 6
+      },
+      "unmapped_memories": 0,
+      "warnings": [
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117",
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117",
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117"
+      ],
+      "script": [
+        "read_verilog -sv rtl/rv32_baseline.sv rtl/rv32_cache.sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_fetch.sv rtl/rv32_load_value.sv rtl/rv32_muldiv.sv rtl/rv32_ooo.sv",
+        "chparam -set ROB_DEPTH 32 rv32_ooo",
+        "hierarchy -check -top rv32_ooo",
+        "rename -top synthesized_core",
+        "synth -flatten -top synthesized_core",
+        "check -assert",
+        "select -assert-none t:$_DLATCH_*",
+        "tee -o /Users/christophersepka/Desktop/RISC-V_proj/riscv-ooo-core/build/stat_ooo32.json stat -json",
+        "write_json build/netlist_ooo32.json"
+      ],
+      "log_sha256": "ecd3d066aa8c36472275fba85f46a661efe787475a81dd129d725f4b879e0f3f"
+    },
+    {
+      "configuration": "cache16",
+      "top": "rv32_cache",
+      "parameters": {
+        "LINES": 16
+      },
+      "generic_cells": 2710,
+      "flip_flop_bits": 1151,
+      "cells_by_type": {
+        "$_ANDNOT_": 144,
+        "$_AND_": 62,
+        "$_DFF_P_": 20,
+        "$_MUX_": 954,
+        "$_NAND_": 45,
+        "$_NOR_": 2,
+        "$_NOT_": 22,
+        "$_ORNOT_": 19,
+        "$_OR_": 192,
+        "$_SDFFCE_PN0P_": 928,
+        "$_SDFFE_PP0P_": 198,
+        "$_SDFF_PP0_": 5,
+        "$_XOR_": 119
+      },
+      "unmapped_memories": 0,
+      "warnings": [
+        "Warning: Replacing memory \\dest with list of registers. See rtl/rv32_ooo.sv:132, rtl/rv32_ooo.sv:117"
+      ],
+      "script": [
+        "read_verilog -sv rtl/rv32_baseline.sv rtl/rv32_cache.sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_fetch.sv rtl/rv32_load_value.sv rtl/rv32_muldiv.sv rtl/rv32_ooo.sv",
+        "chparam -set LINES 16 rv32_cache",
+        "hierarchy -check -top rv32_cache",
+        "rename -top synthesized_core",
+        "synth -flatten -top synthesized_core",
+        "check -assert",
+        "select -assert-none t:$_DLATCH_*",
+        "tee -o /Users/christophersepka/Desktop/RISC-V_proj/riscv-ooo-core/build/stat_cache16.json stat -json",
+        "write_json build/netlist_cache16.json"
+      ],
+      "log_sha256": "8c4d0be9f58a447b26b4abbb7902c7bc22caaa0741f86b7bcf7d1df2aafaabe7"
+    }
+  ]
+}

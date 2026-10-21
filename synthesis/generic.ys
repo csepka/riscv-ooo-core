@@ -1,0 +1,8 @@
+# Standalone default-16 flattened smoke flow; make synth runs the full matrix.
+read_verilog -sv rtl/*.sv
+hierarchy -check -top rv32_ooo
+synth -flatten -top rv32_ooo
+check -assert
+select -assert-none t:$_DLATCH_*
+tee -o build/synthesis16.json stat -json
+write_json build/netlist16.json

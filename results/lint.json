@@ -1,0 +1,52 @@
+{
+  "tool": "Verilator 5.044 2026-01-01 rev vUNKNOWN-built20260101",
+  "passed": 7,
+  "failed": 0,
+  "configurations": [
+    {
+      "top": "rv32_baseline",
+      "parameters": [],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_ooo",
+      "parameters": [
+        "-GROB_DEPTH=16"
+      ],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_ooo",
+      "parameters": [
+        "-GROB_DEPTH=32"
+      ],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_cache",
+      "parameters": [
+        "-GLINES=8"
+      ],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_cache",
+      "parameters": [
+        "-GLINES=16"
+      ],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_cache",
+      "parameters": [
+        "-GLINES=32"
+      ],
+      "status": "pass"
+    },
+    {
+      "top": "rv32_muldiv",
+      "parameters": [],
+      "status": "pass"
+    }
+  ]
+}
