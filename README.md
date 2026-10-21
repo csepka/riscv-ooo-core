@@ -6,7 +6,7 @@ integer/branch and iterative multiply/divide execution, three completion
 broadcasts, and precise in-order retirement. A real sequential RTL baseline and
 an independent Python ISA interpreter are included.
 
-Branches predict PC+4 and recover at retirement. Memory entries form a bounded,
+Branches recover at retirement. Memory entries form a bounded,
 strongly ordered queue inside the ROB: only the oldest instruction accesses
 memory. Optional direct-mapped instruction/data cache adapters are independently
 verified. This project makes those conservative tradeoffs explicit.
@@ -108,14 +108,3 @@ GDSII, or tapeout readiness is claimed. See [physical_design.md](docs/physical_d
 | `synthesis/`, `physical_design/` | Generic flow and unexecuted optional technology/STA preparation |
 | `docs/` | Contracts, measured evidence, verification, performance and review |
 
-Read [ENGINEERING_MASTERY.md](ENGINEERING_MASTERY.md) for first-principles
-explanations, all major modules, instruction examples, alternatives and **56
-answered microarchitecture interview questions**. [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md)
-records the verified state and next priorities.
-
-The supplied README-only repository and initial commit were preserved. No VERA
-reference was supplied, so this is a conventional original OoO design. No
-historical three-stage CPU or third-party proprietary RTL was assumed or copied.
-
-License recommendation: Apache-2.0 for newly authored code. No license grant is
-assumed on the owner's behalf; choose and add a LICENSE before redistribution.
