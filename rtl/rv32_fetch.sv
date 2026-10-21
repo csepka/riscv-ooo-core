@@ -1,5 +1,5 @@
 // One request and one response buffer. Redirect drains uncancellable stale work.
-module rv32_fetch(input wire clk, reset, halt, redirect,
+module rv32_fetch #(parameter integer FAST_FETCH=1)(input wire clk, reset, halt, redirect,
     input wire [31:0] redirect_pc,
     output reg req_valid, input wire req_ready, output reg [31:0] req_addr,
     input wire rsp_valid, rsp_error, input wire [31:0] rsp_data,
@@ -24,7 +24,7 @@ module rv32_fetch(input wire clk, reset, halt, redirect,
                 end
                 discard<=0;
             end
-            if(!req_valid && !pending && !out_valid && !halt && !redirect) begin
+            if(!req_valid && !pending && (!out_valid || (FAST_FETCH!=0 && out_ready)) && !halt && !redirect) begin
                 req_valid<=1; req_addr<=next_pc; next_pc<=next_pc+4; discard<=0;
             end
             if(redirect) begin

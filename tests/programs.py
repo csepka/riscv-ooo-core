@@ -18,6 +18,11 @@ def directed():
         'illegal': [('raw',0xffffffff),('ebreak',)],
         'bad_shift': [('raw',0x02001093),('ebreak',)],
         'ecall': [('ecall',)],
+        'multiply': [('lui',1,0x80000),('addi',2,0,-1)]+[(op,3+i,1,2) for i,op in enumerate(['mul','mulh','mulhsu','mulhu','div','divu','rem','remu'])]+[('ebreak',)],
+        'divide_zero': [('addi',1,0,-17)]+[(op,3+i,1,0) for i,op in enumerate(['div','divu','rem','remu'])]+[('ebreak',)],
+        'md_ooo': [('addi',1,0,17),('addi',2,0,3),('div',3,1,2),('add',4,3,3),('addi',5,0,9),('mul',6,5,2),('add',7,3,6),('ebreak',)],
+        'md_flush': [('lw',1,0,0),('beq',1,0,'ok')]+[('addi',4,0,i) for i in range(4)]+[('div',2,0,0),('sw',2,0,0),'ok',('mul',3,1,1),('ebreak',)],
+        'md_rename': [('addi',1,0,-17),('addi',2,0,3),('div',3,1,2),('addi',1,0,22),('mul',4,1,2),('div',3,4,2),('rem',5,4,3),('add',6,3,5),('ebreak',)],
         'x0_load': [('lw',0,0,0),('addi',1,0,1),('ebreak',)],
         'not_taken_misaligned': [('bne',0,0,2),('ebreak',)],
         'jalr_bit0': [('addi',1,0,13),('jalr',2,1,0),('sw',1,0,0),('ebreak',)],
@@ -31,7 +36,7 @@ def directed():
 
 def random_program(seed, count=160):
     r=random.Random(seed); p=[('addi',i,0,r.randrange(-100,101)) for i in range(1,32)]
-    alu=['add','sub','sll','slt','sltu','xor','srl','sra','or','and']
+    alu=['add','sub','sll','slt','sltu','xor','srl','sra','or','and','mul','mulh','mulhsu','mulhu','div','divu','rem','remu']
     imm=['addi','slti','sltiu','xori','ori','andi']
     for i in range(count):
         rd,a,b=[r.randrange(32) for _ in range(3)]; kind=r.randrange(10)

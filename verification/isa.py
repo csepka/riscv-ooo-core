@@ -30,6 +30,9 @@ def assemble(items):
         elif op in ('sb','sh','sw'):
             r2,r1,v=a; v &= 4095; f={'sb':0,'sh':1,'sw':2}[op]
             w=(v>>5)<<25 | r2<<20 | r1<<15 | f<<12 | (v&31)<<7 | 0x23
+        elif op in ('mul','mulh','mulhsu','mulhu','div','divu','rem','remu'):
+            rd,r1,r2=a;f=['mul','mulh','mulhsu','mulhu','div','divu','rem','remu'].index(op)
+            w=1<<25 | r2<<20 | r1<<15 | f<<12 | rd<<7 | 0x33
         elif op in ('add','sub','sll','slt','sltu','xor','srl','sra','or','and'):
             rd,r1,r2=a; f={'add':0,'sub':0,'sll':1,'slt':2,'sltu':3,'xor':4,'srl':5,'sra':5,'or':6,'and':7}[op]
             w=(0x20 if op in ('sub','sra') else 0)<<25 | r2<<20 | r1<<15 | f<<12 | rd<<7 | 0x33
@@ -44,14 +47,16 @@ def assemble(items):
 
 
 class Machine:
-    def __init__(self, words, memory_bytes=4096, instruction_fault=None):
-        self.words=words; self.mem=bytearray(memory_bytes); self.reg=[0]*32; self.pc=0
+    def __init__(self, words, memory_bytes=4096, instruction_fault=None, code_base=0, memory_base=0):
+        self.words=words; self.mem=bytearray(memory_bytes); self.reg=[0]*32; self.pc=code_base
+        self.code_base=code_base;self.memory_base=memory_base
         self.halted=False; self.instruction_fault=instruction_fault
 
     def step(self):
         pc=self.pc
-        fetch_fault=pc//4 >= len(self.words) or pc == self.instruction_fault
-        ins=0 if fetch_fault else self.words[pc//4]
+        index=(pc-self.code_base)//4
+        fetch_fault=index<0 or index>=len(self.words) or pc == self.instruction_fault
+        ins=0 if fetch_fault else self.words[index]
         opc=ins&127; rd=(ins>>7)&31; f=(ins>>12)&7; r1=(ins>>15)&31; r2=(ins>>20)&31; f7=ins>>25
         a,b=self.reg[r1],self.reg[r2]; imm=signed(ins>>20,12)
         nxt=(pc+4)&MASK; value=0; wr=False; cause=None; addr=0; data=0; mask=0; memop=False
@@ -66,6 +71,8 @@ class Machine:
             cond={0:a==b,1:a!=b,4:signed(a)<signed(b),5:signed(a)>=signed(b),6:a<b,7:a>=b}
             if f not in cond: cause=2
             elif cond[f]: nxt=(pc+signed(off,13))&MASK
+        elif opc==0x33 and f7==1:
+            value=muldiv(f,a,b);wr=True
         elif opc in (0x13,0x33):
             rhs=imm&MASK if opc==0x13 else b
             legal=(opc==0x13 and (f not in (1,5) or f7==0 or (f==5 and f7==32))) or (opc==0x33 and (f7==0 or (f7==32 and f in (0,5))))
@@ -84,16 +91,16 @@ class Machine:
         elif opc in (3,0x23):
             store=opc==0x23
             off=signed(((ins>>25)<<5)|((ins>>7)&31),12) if store else imm
-            addr=(a+off)&MASK; memop=True
+            addr=(a+off)&MASK; memop=True;offset=addr-self.memory_base
             size={0:1,1:2,2:4,4:1,5:2}.get(f)
             if size is None or (store and f>2): cause=2
             elif addr%size: cause=6 if store else 4
-            elif addr+size>len(self.mem): cause=7 if store else 5
+            elif offset<0 or offset+size>len(self.mem): cause=7 if store else 5
             elif store:
                 mask=((1<<size)-1)<<(addr&3); data=(b<<((addr&3)*8))&MASK
-                self.mem[addr:addr+size]=(b&((1<<(size*8))-1)).to_bytes(size,'little')
+                self.mem[offset:offset+size]=(b&((1<<(size*8))-1)).to_bytes(size,'little')
             else:
-                value=int.from_bytes(self.mem[addr:addr+size],'little')
+                value=int.from_bytes(self.mem[offset:offset+size],'little')
                 if f<4: value=signed(value,size*8)
                 wr=True
         elif opc==0x0f and f==0: pass
@@ -108,3 +115,16 @@ class Machine:
         return dict(pc=pc, insn=ins, rd=rd if wr and rd else 0, value=value if wr and rd else 0,
                     mem=int(memop and cause is None), addr=addr if memop and cause is None else 0,
                     data=data if cause is None else 0, mask=mask, trap=int(cause is not None), cause=cause or 0)
+
+
+def muldiv(f,a,b):
+    """ISA math: host arbitrary precision, independent of iterative RTL algorithm."""
+    if f==0: return (a*b)&MASK
+    if f==1: return ((signed(a)*signed(b))>>32)&MASK
+    if f==2: return ((signed(a)*b)>>32)&MASK
+    if f==3: return ((a*b)>>32)&MASK
+    if b==0: return MASK if f in (4,5) else a
+    x,y=(signed(a),signed(b)) if f in (4,6) else (a,b)
+    q=abs(x)//abs(y)
+    if (x<0)!=(y<0): q=-q
+    return (q if f in (4,5) else x-q*y)&MASK

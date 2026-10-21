@@ -1,4 +1,4 @@
-read_verilog -sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_load_value.sv rtl/rv32_fetch.sv rtl/rv32_ooo.sv
+read_verilog -sv rtl/rv32_decode.sv rtl/rv32_execute.sv rtl/rv32_load_value.sv rtl/rv32_fetch.sv rtl/rv32_muldiv.sv rtl/rv32_ooo.sv
 hierarchy -check -top rv32_ooo
 synth -top rv32_ooo
 check -assert

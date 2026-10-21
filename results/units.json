@@ -1,0 +1,11 @@
+{
+  "muldiv_vectors": 4896,
+  "muldiv_flush": 1,
+  "cache_configurations": [
+    8,
+    16,
+    32
+  ],
+  "cache_transactions_per_configuration": 1009,
+  "failed": 0
+}

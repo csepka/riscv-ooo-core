@@ -1,5 +1,5 @@
 // ROB value renaming, integrated reservation stations, two completion broadcasts.
-module rv32_ooo #(parameter integer ROB_DEPTH=16)(
+module rv32_ooo #(parameter integer ROB_DEPTH=16,parameter integer FAST_FETCH=1)(
 input wire clk, reset,
     output wire i_req_valid, input wire i_req_ready, output wire [31:0] i_req_addr,
     input wire i_rsp_valid, i_rsp_error, input wire [31:0] i_rsp_data,
@@ -36,22 +36,32 @@ input wire clk, reset,
     wire retire_fire=count!=0 && valid[head] && done[head] && !halted;
     wire flush=retire_fire && (exception[head] || next_pc[head]!=pc[head]+4);
     wire dispatch=fv && count<COUNT_W'(ROB_DEPTH) && !halted && !flush;
-    rv32_fetch fetch(clk,reset,halted,flush,next_pc[head],i_req_valid,i_req_ready,i_req_addr,
+    rv32_fetch #(.FAST_FETCH(FAST_FETCH)) fetch(clk,reset,halted,flush,next_pc[head],i_req_valid,i_req_ready,i_req_addr,
         i_rsp_valid,i_rsp_error,i_rsp_data,fv,dispatch,fp,fi,fe);
     rv32_decode decode(fi,fr1,fr2,fd,fu1,fu2,fw,fm);
 
+    reg md_found;reg [TAG_W-1:0] md_issue_tag;
     reg issue_found; reg [TAG_W-1:0] issue_tag;
     integer scan; reg [TAG_W-1:0] idx;
     always @* begin
-        issue_found=0; issue_tag=0; idx=0;
+        issue_found=0; issue_tag=0; idx=0;md_found=0;md_issue_tag=0;
         for(scan=0;scan<ROB_DEPTH;scan=scan+1) begin
             idx=head+TAG_W'(scan);
             if(!issue_found && valid[idx] && !issued[idx] && !done[idx] &&
-               !memory_op[idx] && ready1[idx] && ready2[idx]) begin
+               !memory_op[idx] && !(insn[idx][6:0]==7'h33 && insn[idx][31:25]==1) && ready1[idx] && ready2[idx]) begin
                 issue_found=1; issue_tag=TAG_W'(idx);
+            end
+            if(!md_found && valid[idx] && !issued[idx] && !done[idx] &&
+               insn[idx][6:0]==7'h33 && insn[idx][31:25]==1 && ready1[idx] && ready2[idx]) begin
+                md_found=1;md_issue_tag=idx;
             end
         end
     end
+    wire md_ready,md_complete;wire [31:0] md_value;
+    reg [TAG_W-1:0] md_tag;
+    wire md_start=md_found && md_ready && !flush && !halted;
+    rv32_muldiv muldiv(clk,reset,flush,md_start,md_ready,insn[md_issue_tag][14:12],
+        operand1[md_issue_tag],operand2[md_issue_tag],md_complete,md_value);
     wire alu_fire=issue_found && !flush && !halted;
     wire [31:0] av,an,unused_aa,unused_ad; wire [3:0] unused_am,ac; wire unused_ast,at;
     rv32_execute alu(pc[issue_tag],insn[issue_tag],operand1[issue_tag],operand2[issue_tag],av,an,unused_aa,unused_ad,unused_am,unused_ast,at,ac);
@@ -82,6 +92,7 @@ input wire clk, reset,
                 src1_tag=map_tag[fr1]; src1_ready=done[src1_tag]; src1=result[src1_tag];
                 if(alu_fire && issue_tag==src1_tag) begin src1_ready=1;src1=av;end
                 if(mem_complete && head==src1_tag) begin src1_ready=1;src1=load_val;end
+                if(md_complete && md_tag==src1_tag) begin src1_ready=1;src1=md_value;end
             end
         end
         if(fu2 && fr2!=0) begin
@@ -90,13 +101,14 @@ input wire clk, reset,
                 src2_tag=map_tag[fr2]; src2_ready=done[src2_tag]; src2=result[src2_tag];
                 if(alu_fire && issue_tag==src2_tag) begin src2_ready=1;src2=av;end
                 if(mem_complete && head==src2_tag) begin src2_ready=1;src2=load_val;end
+                if(md_complete && md_tag==src2_tag) begin src2_ready=1;src2=md_value;end
             end
         end
     end
     integer k;
     always @(posedge clk) begin
         if(reset) begin
-            head<=0;tail<=0;count<=0;mem_pending<=0;halted<=0;
+            head<=0;tail<=0;count<=0;mem_pending<=0;halted<=0;md_tag<=0;
             retire_valid<=0;retire_pc<=0;retire_insn<=0;retire_rd<=0;retire_value<=0;
             retire_mem<=0;retire_addr<=0;retire_data<=0;retire_mask<=0;retire_trap<=0;retire_cause<=0;
             for(k=0;k<32;k=k+1) begin arch[k]<=0;map_valid[k]<=0;map_tag[k]<=0;end
@@ -140,10 +152,12 @@ input wire clk, reset,
                         if(!ready1[k]) begin
                             if(alu_fire && tag1[k]==issue_tag) begin ready1[k]<=1;operand1[k]<=av;end
                             if(mem_complete && tag1[k]==head) begin ready1[k]<=1;operand1[k]<=load_val;end
+                            if(md_complete && tag1[k]==md_tag) begin ready1[k]<=1;operand1[k]<=md_value;end
                         end
                         if(!ready2[k]) begin
                             if(alu_fire && tag2[k]==issue_tag) begin ready2[k]<=1;operand2[k]<=av;end
                             if(mem_complete && tag2[k]==head) begin ready2[k]<=1;operand2[k]<=load_val;end
+                            if(md_complete && tag2[k]==md_tag) begin ready2[k]<=1;operand2[k]<=md_value;end
                         end
                     end
                 end
@@ -151,6 +165,8 @@ input wire clk, reset,
                     issued[issue_tag]<=1;done[issue_tag]<=1;result[issue_tag]<=av;next_pc[issue_tag]<=an;
                     exception[issue_tag]<=at;exc_cause[issue_tag]<=ac;
                 end
+                if(md_start) begin issued[md_issue_tag]<=1;md_tag<=md_issue_tag;end
+                if(md_complete) begin done[md_tag]<=1;result[md_tag]<=md_value;end
                 if(mem_accept) begin
                     issued[head]<=1;mem_pending<=1;mem_addr[head]<=ma;mem_data[head]<=md;mem_mask[head]<=mm;
                 end

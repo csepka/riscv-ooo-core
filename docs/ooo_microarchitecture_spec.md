@@ -87,3 +87,45 @@ clears the frontend and requires the memory responder to clear pending work.
 Single-wide dispatch does not imply in-order execution. A cache miss can leave a
 load and its consumer stalled while younger independent arithmetic completes.
 The verification suite must capture execution and retirement order separately.
+
+## RV32M extension (implemented after the RV32I checkpoint)
+
+A third execution path, `rv32_muldiv`, accepts one operation and performs 32
+iterative arithmetic steps. Its own oldest-ready selector skips waiting M
+instructions when scheduling ordinary ALU work. MUL/MULH/MULHSU/MULHU use
+magnitude shift-and-add with a final two's-complement sign correction. Division
+uses restoring unsigned division on magnitudes, then quotient/remainder sign
+correction. Division by zero returns all-ones quotient and the dividend as
+remainder; signed minimum divided by -1 produces the minimum and remainder zero.
+These cases do not trap. The unit has a completion pulse and one retained ROB
+tag. It can accept a new operation while the prior completion is consumed.
+
+There are now three independent completion broadcasts: ALU, memory and M unit.
+All operand wakeups and dispatch bypass paths observe all three. A retirement
+flush synchronously cancels the M unit, so a speculative result cannot arrive
+under a recycled ROB tag. The simulator checks this cancellation and collisions.
+The unit's variable wall time comes from scheduling; arithmetic itself always
+uses 32 steps plus request/completion interface edges.
+
+Arithmetic semantics were checked against the ratified [RISC-V M specification](https://docs.riscv.org/reference/isa/v20240411/unpriv/m-st-ext.html).
+The complete core is RV32IM at the unprivileged instruction level, with the
+previously stated trap-to-halt, immutable instruction memory and no-CSR limits.
+
+## Cache adapter
+
+`rv32_cache` is a separate blocking direct-mapped adapter, configured with 16
+one-word lines per port in integration tests (64 bytes each). It has IDLE,
+LOOKUP, SEND and WAIT_RSP states. Read hits answer from the line; misses fetch
+one aligned word. Writes always reach backing memory, update matching lines on
+successful response, and do not allocate a missed line. Byte masks update only
+selected lanes. Error responses never allocate/update a line. Reset invalidates
+all lines. It offers no coherence, burst refill, dirty eviction or MMIO bypass;
+only ordinary RAM and immutable instruction storage may be cached.
+
+## Measured frontend refinement
+
+`FAST_FETCH=1` permits launching a new request on the edge that consumes the
+buffered instruction, saving one bubble while retaining one outstanding request.
+`FAST_FETCH=0` retains the measured earlier behavior for controlled comparison.
+Neither mode allows a response to overwrite a blocked buffer. Benchmarks use
+identical per-transaction memory delay sequences in both modes.

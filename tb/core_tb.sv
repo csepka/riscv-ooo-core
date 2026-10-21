@@ -2,6 +2,7 @@
 module core_tb;
     parameter integer DEPTH=16;
     parameter integer CACHE=0;
+    parameter integer FAST_FETCH=1;
     reg clk=0,reset=1;
     always #5 clk=~clk;
     wire iv,dv,dw; reg ir,dr,irv=0,drv=0,ie=0,de=0;
@@ -26,9 +27,9 @@ module core_tb;
         assign ihits=0;assign imisses=0;assign dhits=0;assign dmisses=0;assign cache_writes=0;
     end endgenerate
 `ifdef BASELINE
-    rv32_baseline dut(
+    rv32_baseline #(.FAST_FETCH(FAST_FETCH)) dut(
 `else
-    rv32_ooo #(.ROB_DEPTH(DEPTH)) dut(
+    rv32_ooo #(.ROB_DEPTH(DEPTH),.FAST_FETCH(FAST_FETCH)) dut(
 `endif
         .clk(clk),.reset(reset),.i_req_valid(civ),.i_req_ready(cir),.i_req_addr(cia),
         .i_rsp_valid(cirv),.i_rsp_error(cie),.i_rsp_data(cid),
@@ -43,9 +44,10 @@ module core_tb;
     integer reset_countdown=0, epoch_start=0;
     integer cycle=0, epoch=0, itimer=-1,dtimer=-1;
     reg [31:0] ipa,dpa,dpd; reg dpw; reg [3:0] dpm;
-    reg [31:0] rng;
+    reg [31:0] rng,delay_rng;
     string program_path, trace_path;
     integer fd,k,retired=0,occ_sum=0,occ_max=0,full_cycles=0,mem_cycles=0,execs=0,redirects=0;
+    integer core_data_start=0,data_latency_sum=0,data_requests=0;
     reg held_i=0,held_d=0; reg [31:0] old_ia,old_da,old_dd; reg old_dw; reg [3:0] old_dm;
     initial begin
         if(!$value$plusargs("program=%s",program_path)) $fatal(1,"program missing");
@@ -59,7 +61,7 @@ module core_tb;
         if(!$value$plusargs("reset_at=%d",reset_at)) reset_at=-1;
         for(k=0;k<8192;k=k+1) imem[k]=32'h00100073;
         $readmemh(program_path,imem,0,nwords-1);
-        fd=$fopen(trace_path,"w"); rng=seed;
+        fd=$fopen(trace_path,"w"); rng=seed;delay_rng=seed;
         repeat(3) @(negedge clk);
         reset=0;
     end
@@ -67,7 +69,7 @@ module core_tb;
     always @(negedge clk) begin
         if(reset) begin
             ir=0;dr=0;irv=0;drv=0;itimer=-1;dtimer=-1;
-            held_i=0;held_d=0;
+            held_i=0;held_d=0;delay_rng=seed;data_requests=0;data_latency_sum=0;core_data_start=0;
             for(k=0;k<4096;k=k+1) mem[k]=0;
             if(reset_countdown>0) begin
                 reset_countdown=reset_countdown-1;
@@ -87,6 +89,10 @@ module core_tb;
             if(halt) begin
                 for(k=0;k<4096;k=k+1) if(mem[k]!=0) $fdisplay(fd,"D %0d %02x",k,mem[k]);
                 $fdisplay(fd,"M %0d %0d %0d %0d %0d %0d %0d %0d",cycle-epoch_start,retired,occ_sum,occ_max,full_cycles,mem_cycles,execs,redirects);
+                `ifndef BASELINE
+                $fdisplay(fd,"Q rs_sum=%0d rs_max=%0d md_busy_cycles=%0d md_completions=%0d ooo_events=%0d head_operand_wait=%0d empty_cycles=%0d alu_idle_cycles=%0d",rs_sum,rs_max,md_cycles,md_results,ooo_events,head_wait,empty_cycles,issue_idle);
+`endif
+                $fdisplay(fd,"L %0d %0d",data_requests,data_latency_sum);
                 $fdisplay(fd,"C %0d %0d %0d %0d %0d",ihits,imisses,dhits,dmisses,cache_writes);
                 $fclose(fd); $display("PASS cycles=%0d retired=%0d",cycle,retired); $finish;
             end
@@ -116,6 +122,8 @@ module core_tb;
     always @(posedge clk) if(!reset) begin
         if(held_i && (!iv || ia!=old_ia)) $fatal(1,"instruction request changed under backpressure");
         if(held_d && (!dv || da!=old_da || dd!=old_dd || dw!=old_dw || dm!=old_dm)) $fatal(1,"data request changed under backpressure");
+        if(cdv&&cdr) begin core_data_start=cycle;data_requests=data_requests+1;end
+        if(cdrv) data_latency_sum=data_latency_sum+cycle-core_data_start;
         held_i=iv&&!ir;old_ia=ia;held_d=dv&&!dr;old_da=da;old_dd=dd;old_dw=dw;old_dm=dm;
         if(iv&&ir) begin
             if(itimer>=0) $fatal(1,"multiple instruction requests");
@@ -123,7 +131,8 @@ module core_tb;
         end
         if(dv&&dr) begin
             if(dtimer>=0) $fatal(1,"multiple data requests");
-            dpa=da;dpd=dd;dpm=dm;dpw=dw;dtimer=latency+(rng[7:4]);
+            dpa=da;dpd=dd;dpm=dm;dpw=dw;dtimer=latency+int'(delay_rng[7:4]);
+            delay_rng=delay_rng^(delay_rng<<13);delay_rng=delay_rng^(delay_rng>>17);delay_rng=delay_rng^(delay_rng<<5);
         end
         if(ev) begin $fdisplay(fd,"E %0d %08x",cycle,ep);execs=execs+1; end
     end
