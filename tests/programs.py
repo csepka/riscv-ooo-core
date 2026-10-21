@@ -18,6 +18,14 @@ def directed():
         'illegal': [('raw',0xffffffff),('ebreak',)],
         'bad_shift': [('raw',0x02001093),('ebreak',)],
         'ecall': [('ecall',)],
+        'x0_load': [('lw',0,0,0),('addi',1,0,1),('ebreak',)],
+        'not_taken_misaligned': [('bne',0,0,2),('ebreak',)],
+        'jalr_bit0': [('addi',1,0,13),('jalr',2,1,0),('sw',1,0,0),('ebreak',)],
+        'jalr_misaligned': [('addi',1,0,7),('jalr',2,1,0),('ebreak',)],
+        'wrong_path_fault': [('lw',1,0,0),('beq',1,0,'ok'),('raw',0xffffffff),('sw',1,0,0),'ok',('ebreak',)],
+        'wrong_path_load': [('lw',1,0,0),('beq',1,0,'ok'),('lui',2,1),('lw',3,2,0),('sw',2,0,0),'ok',('ebreak',)],
+        'all_branch_conditions': [('addi',1,0,-1),('addi',2,0,1),('blt',1,2,'a'),('raw',0),'a',('bge',2,1,'b'),('raw',0),'b',('bltu',2,1,'c'),('raw',0),'c',('bgeu',1,2,'d'),('raw',0),'d',('ebreak',)],
+        'dependency_pressure': [('lw',1,0,0)]+[('add',i%30+1,1,1) for i in range(90)]+[('ebreak',)],
         'fetch_fault': [('addi',1,0,5),('ebreak',)],
     }
 

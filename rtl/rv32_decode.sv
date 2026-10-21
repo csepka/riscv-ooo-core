@@ -2,6 +2,7 @@
 module rv32_decode(input wire [31:0] insn,
     output wire [4:0] rs1, rs2, rd,
     output reg use1, use2, writes_rd, is_mem);
+    wire [9:0] unused_fields={insn[31:25],insn[14:12]};
     assign rs1=insn[19:15]; assign rs2=insn[24:20]; assign rd=insn[11:7];
     always @* begin
         use1=0; use2=0; writes_rd=0; is_mem=0;

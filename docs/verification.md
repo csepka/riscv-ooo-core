@@ -15,3 +15,10 @@ The memory responder adds deterministic random request backpressure and variable
 load/store response delay. The testbench checks blocked request stability,
 single-outstanding contracts and timeouts. Detailed command/configuration and
 subsequent OoO verification will be recorded as the implementation advances.
+
+The RV32I OoO milestone passed 128 programs per baseline/16/32 configuration
+(25 directed, 100 random, three active reset cases). Cached OoO16 passed 48
+programs (20 random). The standalone cache passed 1,009 transactions including
+byte-write masks, conflicts, errors and reset invalidation. Assertion coverage
+and metrics are stored with each test in JSON. These counts describe this
+checkpoint; later reports supersede them as features and suites grow.
