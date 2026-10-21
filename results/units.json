@@ -7,5 +7,34 @@
     32
   ],
   "cache_transactions_per_configuration": 1009,
+  "cache_latency": [
+    {
+      "hits": 15,
+      "hit_cycles": 45,
+      "misses": 508,
+      "miss_cycles": 7652,
+      "lines": 8,
+      "hit_latency_mean": 3.0,
+      "miss_latency_mean": 15.062992125984252
+    },
+    {
+      "hits": 29,
+      "hit_cycles": 87,
+      "misses": 488,
+      "miss_cycles": 7376,
+      "lines": 16,
+      "hit_latency_mean": 3.0,
+      "miss_latency_mean": 15.114754098360656
+    },
+    {
+      "hits": 61,
+      "hit_cycles": 183,
+      "misses": 455,
+      "miss_cycles": 6819,
+      "lines": 32,
+      "hit_latency_mean": 3.0,
+      "miss_latency_mean": 14.986813186813187
+    }
+  ],
   "failed": 0
 }

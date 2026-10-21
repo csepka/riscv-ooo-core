@@ -1,4 +1,4 @@
-// ROB value renaming, integrated reservation stations, two completion broadcasts.
+// ROB value renaming, integrated reservation stations, three completion broadcasts.
 module rv32_ooo #(parameter integer ROB_DEPTH=16,parameter integer FAST_FETCH=1)(
 input wire clk, reset,
     output wire i_req_valid, input wire i_req_ready, output wire [31:0] i_req_addr,

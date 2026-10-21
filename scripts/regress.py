@@ -11,7 +11,7 @@ def run(cmd):
     return p.stdout
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--baseline',action='store_true');ap.add_argument('--seeds',type=int,default=20);ap.add_argument('--depth',type=int,default=16);ap.add_argument('--latency',type=int,default=30);ap.add_argument('--only');ap.add_argument('--ilatency',type=int,default=0);ap.add_argument('--output');ap.add_argument('--cache',action='store_true');ap.add_argument('--benchmarks',action='store_true');ap.add_argument('--legacy-fetch',action='store_true');ap.add_argument('--sim',choices=['icarus','verilator'],default='icarus');args=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--baseline',action='store_true');ap.add_argument('--seeds',type=int,default=20);ap.add_argument('--depth',type=int,default=16);ap.add_argument('--latency',type=int,default=30);ap.add_argument('--only');ap.add_argument('--program');ap.add_argument('--ilatency',type=int,default=0);ap.add_argument('--output');ap.add_argument('--cache',action='store_true');ap.add_argument('--benchmarks',action='store_true');ap.add_argument('--legacy-fetch',action='store_true');ap.add_argument('--sim',choices=['icarus','verilator'],default='icarus');args=ap.parse_args()
     build=ROOT/'build';build.mkdir(exist_ok=True)
     name='baseline' if args.baseline else f'ooo{args.depth}'
     if args.cache: name+='_cache'
@@ -30,7 +30,10 @@ def main():
         import importlib.util
         spec=importlib.util.spec_from_file_location('bench_programs',ROOT/'benchmarks/programs.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         progs=module.benchmark_programs()
+    if args.program:
+        progs={'external_program':[('raw',int(line,16)) for line in Path(args.program).read_text().splitlines() if line.strip()]}
     if args.only: progs={k:v for k,v in progs.items() if k==args.only}
+    if not progs: raise ValueError('No programs selected; check --only or --program')
     results=[]
     for test,program in progs.items():
         words=assemble(program);hexfile=build/f'{test}.hex';hexfile.write_text(''.join(f'{w:08x}\n' for w in words));trace=build/f'{name}_{test}.trace'
@@ -80,4 +83,10 @@ def main():
         results.append(result);print(f'{name}/{test}: PASS ({n} checked retirement events, {cycles} cycles)')
     output=ROOT/'results'/(args.output or (f'{name}_{args.only}.json' if args.only else f'{name}.json'));output.write_text(json.dumps(dict(configuration=vars(args),command=sys.argv,rtl_sha256=hashlib.sha256(b''.join(p.name.encode()+p.read_bytes() for p in sorted((ROOT/'rtl').glob('*.sv')))).hexdigest(),passed=len(results),failed=0,tests=results),indent=2)+'\n')
     print(f'{len(results)} passed; {output}')
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try:
+        main()
+    except Exception as error:
+        (ROOT/'results').mkdir(exist_ok=True)
+        (ROOT/'results/last_failure.json').write_text(json.dumps(dict(status='failed',command=sys.argv,error=str(error)),indent=2)+'\n')
+        raise

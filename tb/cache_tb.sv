@@ -10,6 +10,7 @@ module cache_tb;
     reg [31:0] backing[0:255],reference_mem[0:255];
     reg [31:0] rng=32'h12345678,pa,pd;reg pw;reg [3:0] pm;
     integer timer=-1,k,j,passed=0,cycles=0;
+    integer measured_hits=0,measured_misses=0,hit_cycles=0,miss_cycles=0;
     reg held=0;reg [68:0] held_payload;
     always @(posedge clk) if(!reset) begin
         if(held && (!mv || {ma,mw,md,mm}!=held_payload)) $fatal(1,"unstable cache miss request");
@@ -33,9 +34,9 @@ module cache_tb;
         end else if(timer>0) timer=timer-1;
     end
     task automatic transaction(input [31:0] address,input wr,input [31:0] data,input [3:0] mask);
-        reg [31:0] expected;integer b;
+        reg [31:0] expected;integer b,started,old_hits;
         begin
-            @(negedge clk);cv=1;ca=address;cw=wr;cd=data;cm=mask;
+            @(negedge clk);cv=1;ca=address;cw=wr;cd=data;cm=mask;started=cycles;old_hits=hits;
             do @(posedge clk); while(!cr);
             @(negedge clk);cv=0;
             do @(negedge clk); while(!rv);
@@ -44,6 +45,10 @@ module cache_tb;
                 if(wr) for(b=0;b<4;b=b+1) if(mask[b]) reference_mem[address/4][8*b+:8]=data[8*b+:8];
                 expected=reference_mem[address/4];
                 if(!wr && rd!==expected) $fatal(1,"cache read mismatch addr=%h got=%h exp=%h",address,rd,expected);
+            end
+            if(!wr && !re) begin
+                if(hits!=old_hits) begin measured_hits=measured_hits+1;hit_cycles=hit_cycles+cycles-started;end
+                else begin measured_misses=measured_misses+1;miss_cycles=miss_cycles+cycles-started;end
             end
             passed=passed+1;
         end
@@ -61,6 +66,7 @@ module cache_tb;
         transaction(0,0,0,0);
         if(misses!=1 || hits!=0) $fatal(1,"cache reset did not invalidate");
         for(k=0;k<256;k=k+1) if(backing[k]!==reference_mem[k]) $fatal(1,"cache write mismatch");
+        $display("LATENCY hits=%0d hit_cycles=%0d misses=%0d miss_cycles=%0d",measured_hits,hit_cycles,measured_misses,miss_cycles);
         $display("PASS cache lines=%0d transactions=%0d",LINES,passed);$finish;
     end
 endmodule

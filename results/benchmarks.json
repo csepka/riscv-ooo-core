@@ -1,0 +1,84 @@
+{
+  "configurations": {
+    "baseline": {
+      "baseline": true,
+      "seeds": 20,
+      "depth": 16,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_baseline.json",
+      "cache": false,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    },
+    "ooo16": {
+      "baseline": false,
+      "seeds": 20,
+      "depth": 16,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_ooo16.json",
+      "cache": false,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    },
+    "ooo32": {
+      "baseline": false,
+      "seeds": 20,
+      "depth": 32,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_ooo32.json",
+      "cache": false,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    },
+    "baseline_cache": {
+      "baseline": true,
+      "seeds": 20,
+      "depth": 16,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_baseline_cache.json",
+      "cache": true,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    },
+    "ooo16_cache": {
+      "baseline": false,
+      "seeds": 20,
+      "depth": 16,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_ooo16_cache.json",
+      "cache": true,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    },
+    "ooo32_cache": {
+      "baseline": false,
+      "seeds": 20,
+      "depth": 32,
+      "latency": 30,
+      "only": null,
+      "ilatency": 8,
+      "output": "bench_ooo32_cache.json",
+      "cache": true,
+      "benchmarks": true,
+      "legacy_fetch": false,
+      "sim": "icarus"
+    }
+  },
+  "passed": 56,
+  "failed": 0
+}

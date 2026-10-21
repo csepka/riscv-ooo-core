@@ -1,5 +1,9 @@
 # Architecture and implementation plan
 
+This file preserves the initial design contract and staged plan. The delivered
+implementation has progressed to RV32IM and verified caches; see
+[PROJECT_PROGRESS.md](../PROJECT_PROGRESS.md) for completed milestones and limits.
+
 This repository started from the supplied README-only Git repository. There is no
 historical three-stage CPU here and no identifiable VERA architectural reference.
 The implementation is a conventional, original educational OoO design.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json,random,sys,subprocess
+import json,random,re,sys,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'verification'))
 from isa import muldiv
@@ -14,7 +14,10 @@ def run(cmd):
  print(p.stdout.strip());return p.stdout
 run(['iverilog','-g2012','-s','muldiv_tb','-o','build/muldiv.vvp','rtl/rv32_muldiv.sv','tb/muldiv_tb.sv'])
 run(['vvp','build/muldiv.vvp','+vectors=build/muldiv.txt'])
+cache_metrics=[]
 for lines in (8,16,32):
  run(['iverilog','-g2012','-s','cache_tb','-P',f'cache_tb.LINES={lines}','-o','build/cache_unit.vvp','rtl/rv32_cache.sv','tb/cache_tb.sv'])
- run(['vvp','build/cache_unit.vvp'])
-(ROOT/'results/units.json').write_text(json.dumps(dict(muldiv_vectors=len(vectors),muldiv_flush=1,cache_configurations=[8,16,32],cache_transactions_per_configuration=1009,failed=0),indent=2)+'\n')
+ output=run(['vvp','build/cache_unit.vvp'])
+ metrics={k:int(v) for k,v in re.findall(r'(hits|hit_cycles|misses|miss_cycles)=(\d+)',output)}
+ metrics['lines']=lines;metrics['hit_latency_mean']=metrics['hit_cycles']/metrics['hits'];metrics['miss_latency_mean']=metrics['miss_cycles']/metrics['misses'];cache_metrics.append(metrics)
+(ROOT/'results/units.json').write_text(json.dumps(dict(muldiv_vectors=len(vectors),muldiv_flush=1,cache_configurations=[8,16,32],cache_transactions_per_configuration=1009,cache_latency=cache_metrics,failed=0),indent=2)+'\n')
